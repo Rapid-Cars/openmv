@@ -1332,6 +1332,8 @@ void imlib_find_iris(image_t *src, point_t *iris, rectangle_t *roi);
 // Image filter functions
 void im_filter_bw(uint8_t *src, uint8_t *dst, int size, int bpp, void *args);
 void im_filter_skin(uint8_t *src, uint8_t *dst, int size, int bpp, void *args);
+void imlib_sobel_filter(image_t *img);
+
 
 // Edge detection
 void imlib_edge_simple(image_t *src, rectangle_t *roi, int low_thresh, int high_thresh);

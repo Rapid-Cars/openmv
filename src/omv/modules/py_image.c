@@ -2500,6 +2500,17 @@ static mp_obj_t py_image_bilateral(size_t n_args, const mp_obj_t *args, mp_map_t
 static MP_DEFINE_CONST_FUN_OBJ_KW(py_image_bilateral_obj, 2, py_image_bilateral);
 #endif // IMLIB_ENABLE_BILATERAL
 
+static mp_obj_t py_image_sobel(mp_obj_t img_obj) {
+    image_t *img = py_image_cobj(img_obj);
+
+    //mp_printf(&mp_plat_print, "Sobel-Funktion wurde aufgerufen!\n");
+
+    imlib_sobel_filter(img);
+    return img_obj;
+}
+static MP_DEFINE_CONST_FUN_OBJ_1(py_image_sobel_obj, py_image_sobel);
+
+
 ////////////////////
 // Geometric Methods
 ////////////////////
@@ -6443,6 +6454,8 @@ static const mp_rom_map_elem_t locals_dict_table[] = {
     #else
     {MP_ROM_QSTR(MP_QSTR_rotation_corr),       MP_ROM_PTR(&py_func_unavailable_obj)},
     #endif
+    {MP_OBJ_NEW_QSTR(MP_QSTR_sobel), (mp_obj_t)&py_image_sobel_obj},
+
     /* Get Methods */
     #ifdef IMLIB_ENABLE_GET_SIMILARITY
     {MP_ROM_QSTR(MP_QSTR_get_similarity),      MP_ROM_PTR(&py_image_get_similarity_obj)},

@@ -24,7 +24,9 @@
  * Image filtering functions.
  */
 #include "fsort.h"
+#include <math.h>
 #include "imlib.h"
+#include <stdio.h>
 
 void imlib_histeq(image_t *img, image_t *mask) {
     switch (img->pixfmt) {
@@ -2093,3 +2095,86 @@ void imlib_bilateral_filter(image_t *img,
     }
 }
 #endif // IMLIB_ENABLE_BILATERAL
+
+/**
+ * @brief Applies a Sobel edge detection filter to a grayscale image.
+ *
+ * This function computes the gradient magnitude at each pixel using the Sobel operator,
+ * which approximates the derivative in both the x and y directions. The result is used to
+ * highlight edges in the image by assigning an intensity value based on the strength of the
+ * gradient. The edge strength is quantized into 8 levels for visualization.
+ *
+ * The original image data is preserved in a temporary buffer while the filtered data is written
+ * back to the original image buffer. The outermost border pixels are set to zero to avoid
+ * edge artifacts due to missing neighbor pixels.
+ *
+ * @param img Pointer to the grayscale image to be processed. The image must be 8-bit (1 byte per pixel).
+ *
+ * @note The function modifies the input image in place.
+ * @note Pixels near the image borders (width/height ±1) are excluded from filtering.
+ */
+void imlib_sobel_filter(image_t *img) {
+    /**
+     * Ideas for the future:
+     * Only apply the filter in the x or y direction via a parameter
+     *
+     * Only apply the filter for one or multiple areas in the image (also via a parameter)
+     *
+     * Don't use an if statement to calculate the output gradient. The maximum value for g is 1530. To fit this
+     * into an 8-bit image the value has to be devided by 6. Then you can do more with the resulting output
+     *
+     * Check why this does not work with higher resolutions. Memory overflow?
+     *
+     * Check the correct implementation (with sqrt instead of abs(gx) + abs(gy)
+     */
+    //printf("imlib_sobel_filter was called!\n");
+    int width = img->w;
+    int height = img->h;
+    uint8_t *data = img->pixels;
+    uint8_t temp[width * height];
+    memcpy(temp, data, width * height);
+
+    for (int y = 1; y <= (height - 2); y++) {
+        for (int x = 1; x <= (width - 2); x++) {
+
+            int pomo = data[(y - 1) * width + (x + 1)];
+            int mopo = data[(y + 1) * width + (x - 1)];
+            int shared = data[(y + 1) * width + (x + 1)] - data[(y - 1) * width + (x - 1)];
+            int gx = shared + (-1 * ((2 * data[y * width + (x - 1)]) + mopo) + pomo + (2 * data[y * width + (x + 1)]));
+            int gy = shared + (-1 * ((2 * data[(y - 1) * width + x]) + pomo) + mopo + (2 * data[(y + 1) * width + x]));
+
+            int g = abs(gx) + abs(gy);
+
+            if (g > 750) {
+                g = 255;
+            } else if (g > 500) {
+              g = 191;
+            } else if (g > 400) {
+              g = 159;
+            } else if (g > 300) {
+                g = 127;
+            } else if (g > 200) {
+                g = 95;
+            } else if (g > 100) {
+                g = 63;
+            } else if (g > 50) {
+                g = 31;
+            } else {
+                g = 0;
+            }
+
+            temp[y * width + x] = g;
+        }
+    }
+
+    for (int y = 0; y <= (height - 1); y++) {
+      temp[y * width + 0] = 0; // x=0
+      temp[y * width + width - 1] = 0; // x = (width - 1)
+	}
+    for (int x = 0; x <= (width - 1); x++) {
+      temp[0 + x] = 0; // y = 0
+      temp[(height - 1) * width + x] = 0; // y = height - 1
+    }
+
+    memcpy(img->pixels, temp, width * height);
+}
